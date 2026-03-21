@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GuardPal - Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .user-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ GuardPal - Dashboard</h1>
+        <p>Bienvenido a tu panel de control</p>
+    </div>
+    
+    <div class="card">
+        <h2>✅ Acceso Autorizado</h2>
+        <div id="userInfo" class="user-info">
+            Cargando información del usuario...
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>Opciones</h3>
+        <ul>
+            <li><a href="wallet.html">💰 Billetera</a></li>
+            <li><a href="history.html">📊 Historial</a></li>
+            <li><a href="profile.html">👤 Mi Perfil</a></li>
+        </ul>
+    </div>
+    
+    <button onclick="cerrarSesion()">Cerrar Sesión</button>
+    
+    <script>
+        // Verificar autenticación
+        function verificarAuth() {
+            const sesion = sessionStorage.getItem('guardpal_auth');
+            
+            if (!sesion) {
+                alert('No hay sesión activa. Redirigiendo al login...');
+                window.location.href = '../test-directo.html';
+                return false;
+            }
+            
+            try {
+                const data = JSON.parse(sesion);
+                const ahora = Date.now();
+                
+                if (ahora > data.expiresAt) {
+                    alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                    sessionStorage.removeItem('guardpal_auth');
+                    window.location.href = '../test-directo.html';
+                    return false;
+                }
+                
+                // Mostrar información del usuario
+                const userInfo = document.getElementById('userInfo');
+                userInfo.innerHTML = `
+                    <strong>Nombre:</strong> ${data.user.name}<br>
+                    <strong>Email:</strong> ${data.user.email}<br>
+                    <strong>Rol:</strong> ${data.user.role}<br>
+                    <strong>ID de usuario:</strong> ${data.user.id}<br>
+                    <strong>Token:</strong> <code>${data.token.substring(0, 30)}...</code><br>
+                    <strong>Sesión válida hasta:</strong> ${new Date(data.expiresAt).toLocaleString()}
+                `;
+                
+                return true;
+            } catch (e) {
+                console.error('Error al leer sesión:', e);
+                return false;
+            }
+        }
+        
+        function cerrarSesion() {
+            sessionStorage.removeItem('guardpal_auth');
+            alert('Sesión cerrada');
+            window.location.href = '../test-directo.html';
+        }
+        
+        // Verificar al cargar
+        verificarAuth();
+    </script>
+</body>
+</html>

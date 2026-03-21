@@ -1,0 +1,44 @@
+// placeholder.js - Generador de placeholders dinámicos
+class PlaceholderGenerator {
+    static createGradientPlaceholder(width, height, text, colors = ['#667eea', '#764ba2']) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        // Crear gradiente
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, colors[0]);
+        gradient.addColorStop(1, colors[1]);
+        
+        // Dibujar fondo
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Dibujar texto
+        ctx.fillStyle = 'white';
+        ctx.font = `bold ${Math.floor(height / 8)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, width / 2, height / 2);
+        
+        // Dibujar ícono de escudo
+        ctx.font = `${Math.floor(height / 3)}px Arial`;
+        ctx.fillText('🛡️', width / 2, height / 3);
+        
+        return canvas.toDataURL();
+    }
+    
+    static applyToAllPlaceholders() {
+        document.querySelectorAll('img[data-placeholder]').forEach(img => {
+            const text = img.getAttribute('data-placeholder') || 'GuardPal';
+            const width = img.width || 1200;
+            const height = img.height || 400;
+            img.src = this.createGradientPlaceholder(width, height, text);
+        });
+    }
+}
+
+// Uso en HTML:
+// <img data-placeholder="Bienvenido a GuardPal" class="d-block w-100" alt="Slide">
+// <script>PlaceholderGenerator.applyToAllPlaceholders();</script>

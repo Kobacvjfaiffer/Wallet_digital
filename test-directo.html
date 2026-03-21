@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Directo GuardPal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="text-align:center; margin-bottom:20px;">🛡️ GuardPal</h2>
+        <h3 style="text-align:center; color:#666;">Login de Prueba</h3>
+        
+        <div id="message"></div>
+        
+        <input type="text" id="email" placeholder="Email" value="victor@gmail.com">
+        <input type="password" id="password" placeholder="Contraseña" value="12345">
+        
+        <button onclick="hacerLogin()">Iniciar Sesión</button>
+        
+        <hr style="margin: 20px 0;">
+        
+        <button onclick="verSesion()" style="background: #6c757d;">Ver Sesión Actual</button>
+        <button onclick="limpiarSesion()" style="background: #dc3545; margin-top: 10px;">Limpiar Sesión</button>
+        
+        <div id="status" class="message info" style="margin-top: 20px;">
+            Estado: Esperando acción...
+        </div>
+    </div>
+    
+    <script>
+        function mostrarMensaje(texto, tipo) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerHTML = `<div class="${tipo}">${texto}</div>`;
+            setTimeout(() => {
+                if (msgDiv.innerHTML) msgDiv.innerHTML = '';
+            }, 3000);
+        }
+        
+        function actualizarEstado(texto) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = texto;
+            statusDiv.className = 'message info';
+        }
+        
+        function hacerLogin() {
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            
+            console.log('Intentando login con:', email, password);
+            
+            // CREDENCIALES CORRECTAS
+            const esValido = (email === 'victor@gmail.com' && password === '12345');
+            
+            if (esValido) {
+                // Crear datos de usuario
+                const userData = {
+                    id: 1,
+                    name: 'Víctor',
+                    email: email,
+                    role: 'user',
+                    loginTime: new Date().toISOString()
+                };
+                
+                // Crear token simple
+                const token = btoa(`${email}:${Date.now()}`);
+                
+                // Crear sesión
+                const session = {
+                    user: userData,
+                    token: token,
+                    expiresAt: Date.now() + (24 * 60 * 60 * 1000)
+                };
+                
+                // Guardar en sessionStorage
+                sessionStorage.setItem('guardpal_auth', JSON.stringify(session));
+                
+                console.log('✅ Sesión guardada:', session);
+                mostrarMensaje('✅ Login exitoso! Redirigiendo al dashboard...', 'success');
+                actualizarEstado('✅ Login exitoso. Redirigiendo...');
+                
+                // Redirigir a dashboard
+                setTimeout(() => {
+                    window.location.href = 'pages/dashboard.html';
+                }, 1500);
+                
+            } else {
+                console.log('❌ Credenciales incorrectas');
+                mostrarMensaje('❌ Email o contraseña incorrectos', 'error');
+                actualizarEstado('❌ Credenciales inválidas. Usa: victor@gmail.com / 12345');
+            }
+        }
+        
+        function verSesion() {
+            const sesion = sessionStorage.getItem('guardpal_auth');
+            if (sesion) {
+                const data = JSON.parse(sesion);
+                mostrarMensaje(`✅ Sesión activa para: ${data.user.email}`, 'success');
+                actualizarEstado(`Sesión activa: ${data.user.email} - Expira: ${new Date(data.expiresAt).toLocaleString()}`);
+                console.log('Sesión actual:', data);
+            } else {
+                mostrarMensaje('❌ No hay sesión activa', 'error');
+                actualizarEstado('No hay sesión activa. Haz login primero.');
+            }
+        }
+        
+        function limpiarSesion() {
+            sessionStorage.removeItem('guardpal_auth');
+            mostrarMensaje('🗑️ Sesión eliminada', 'info');
+            actualizarEstado('Sesión eliminada. Puedes hacer login nuevamente.');
+            console.log('Sesión eliminada');
+        }
+        
+        // Verificar estado inicial
+        verSesion();
+    </script>
+</body>
+</html>
+
