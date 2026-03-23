@@ -1,5 +1,4 @@
-
-// js/modules/login.js - VERSIÓN CORREGIDA
+// login.js - Login que funciona con usuarios registrados
 class LoginModule {
     constructor() {
         this.form = document.getElementById('loginForm');
@@ -16,9 +15,24 @@ class LoginModule {
         
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
         
-        // Limpiar mensajes al escribir
         this.emailInput?.addEventListener('input', () => this.clearMessage());
         this.passwordInput?.addEventListener('input', () => this.clearMessage());
+        
+        // Verificar si hay sesión activa
+        if (this.isAuthenticated()) {
+            window.location.href = 'dashboard.html';
+        }
+    }
+    
+    isAuthenticated() {
+        const sesion = sessionStorage.getItem('guardpal_auth');
+        if (!sesion) return false;
+        try {
+            const data = JSON.parse(sesion);
+            return Date.now() < data.expiresAt;
+        } catch(e) {
+            return false;
+        }
     }
     
     async handleSubmit(e) {
@@ -27,56 +41,47 @@ class LoginModule {
         const email = this.emailInput?.value.trim().toLowerCase();
         const password = this.passwordInput?.value;
         
-        console.log('Intentando login con:', email, password); // 👈 DEBUG
-        
-        // Validaciones
         if (!email || !password) {
             this.showMessage('Por favor completa todos los campos', 'warning');
             return;
         }
         
-        if (!Helpers.isValidEmail(email)) {
-            this.showMessage('Por favor ingresa un email válido', 'warning');
+        if (!this.isValidEmail(email)) {
+            this.showMessage('Ingresa un email válido', 'warning');
             return;
         }
         
         this.setLoading(true);
         
         try {
-            // AUTENTICACIÓN CORREGIDA
-            const isValid = await this.authenticate(email, password);
+            const user = await this.authenticate(email, password);
             
-            console.log('Resultado autenticación:', isValid); // 👈 DEBUG
-            
-            if (isValid) {
+            if (user) {
                 // Crear sesión
-                const userData = {
-                    id: 1,
-                    name: email.split('@')[0],
-                    email: email,
-                    role: 'user',
-                    memberSince: new Date().toISOString()
+                const token = btoa(`${email}:${Date.now()}`);
+                const session = {
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role || 'user'
+                    },
+                    token: token,
+                    expiresAt: Date.now() + (24 * 60 * 60 * 1000)
                 };
                 
-                const token = btoa(`${email}:${Date.now()}`);
+                sessionStorage.setItem('guardpal_auth', JSON.stringify(session));
                 
-                // Usar el método correcto de auth
-                if (auth && auth.setSession) {
-                    auth.setSession(userData, token);
-                } else {
-                    // Fallback si auth no tiene setSession
-                    const session = {
-                        user: userData,
-                        token: token,
-                        expiresAt: Date.now() + (24 * 60 * 60 * 1000)
-                    };
-                    sessionStorage.setItem('guardpal_auth', JSON.stringify(session));
+                // Cargar transacciones del usuario
+                const userTransactions = localStorage.getItem(`guardpal_transactions_${user.id}`);
+                if (userTransactions) {
+                    localStorage.setItem('guardpal_transactions', userTransactions);
                 }
                 
+                console.log('✅ Login exitoso:', user.email);
                 this.showMessage('✅ Login exitoso! Redirigiendo...', 'success');
                 
                 setTimeout(() => {
-                    // Redirigir a dashboard (verificar ruta correcta)
                     window.location.href = 'dashboard.html';
                 }, 1000);
             } else {
@@ -85,7 +90,7 @@ class LoginModule {
                 this.passwordInput?.focus();
             }
         } catch (error) {
-            console.error('Error detallado:', error);
+            console.error('Error:', error);
             this.showMessage('Error de conexión. Intenta de nuevo.', 'danger');
         } finally {
             this.setLoading(false);
@@ -93,20 +98,52 @@ class LoginModule {
     }
     
     async authenticate(email, password) {
-        // AUTENTICACIÓN CORREGIDA - SIMULACIÓN FUNCIONAL
+        // Simular delay
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // CREDENCIALES VÁLIDAS
-        const validEmail = 'victor@gmail.com';
-        const validPassword = '12345';
+        // Obtener usuarios registrados
+        const users = JSON.parse(localStorage.getItem('guardpal_users') || '[]');
         
-        // Comparación EXACTA
-        const isValid = email === validEmail && password === validPassword;
+        // Usuario por defecto si no hay usuarios
+        if (users.length === 0) {
+            // Crear usuario demo
+            const demoUser = {
+                id: 1,
+                name: 'Víctor',
+                email: 'victor@gmail.com',
+                password: '12345',
+                role: 'user',
+                createdAt: new Date().toISOString()
+            };
+            users.push(demoUser);
+            localStorage.setItem('guardpal_users', JSON.stringify(users));
+            
+            // Crear transacciones demo
+            const demoTransactions = [
+                { id: Date.now(), type: 'deposit', amount: 1000, currency: 'USD', date: new Date().toISOString().split('T')[0], status: 'completed', description: 'Depósito inicial' },
+                { id: Date.now() + 1, type: 'deposit', amount: 500, currency: 'USD', date: new Date().toISOString().split('T')[0], status: 'completed', description: 'Transferencia recibida' }
+            ];
+            localStorage.setItem('guardpal_transactions_1', JSON.stringify(demoTransactions));
+        }
         
-        console.log('Comparando:', email, '===', validEmail, '?', email === validEmail);
-        console.log('Comparando contraseña:', password, '===', validPassword, '?', password === validPassword);
+        // Buscar usuario
+        const user = users.find(u => u.email === email && u.password === password);
         
-        return isValid;
+        if (user) {
+            return {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role || 'user'
+            };
+        }
+        
+        return null;
+    }
+    
+    isValidEmail(email) {
+        const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+        return re.test(email);
     }
     
     setLoading(isLoading) {
@@ -135,16 +172,9 @@ class LoginModule {
                 </div>
             `;
             
-            // Auto-cerrar después de 3 segundos para mensajes de éxito
-            if (type === 'success') {
-                setTimeout(() => {
-                    if (this.messageDiv) this.messageDiv.innerHTML = '';
-                }, 3000);
-            } else {
-                setTimeout(() => {
-                    if (this.messageDiv) this.messageDiv.innerHTML = '';
-                }, 5000);
-            }
+            setTimeout(() => {
+                if (this.messageDiv.innerHTML) this.messageDiv.innerHTML = '';
+            }, 3000);
         }
     }
     
@@ -155,7 +185,7 @@ class LoginModule {
     }
 }
 
-// Inicializar cuando el DOM esté listo
+// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
     new LoginModule();
 });

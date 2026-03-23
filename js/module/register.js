@@ -1,4 +1,4 @@
-// js/modules/register.js - VERSIÓN CORREGIDA
+// register.js - Registro de usuarios con persistencia
 class RegisterModule {
     constructor() {
         this.form = document.getElementById('registerForm');
@@ -33,7 +33,7 @@ class RegisterModule {
         const confirmPassword = this.confirmPasswordInput?.value;
         const terms = this.termsInput?.checked;
         
-        console.log('Registrando:', { fullName, email, password }); // 👈 DEBUG
+        console.log('📝 Intentando registrar:', { fullName, email });
         
         // Validaciones
         if (!fullName || !email || !password || !confirmPassword) {
@@ -41,7 +41,7 @@ class RegisterModule {
             return;
         }
         
-        if (!Helpers.isValidEmail(email)) {
+        if (!this.isValidEmail(email)) {
             this.showMessage('Ingresa un email válido', 'danger');
             return;
         }
@@ -64,10 +64,8 @@ class RegisterModule {
         this.setLoading(true);
         
         try {
-            // Registro CORREGIDO
+            // Intentar registrar
             const success = await this.registerUser(fullName, email, password);
-            
-            console.log('Resultado registro:', success); // 👈 DEBUG
             
             if (success) {
                 this.showMessage('✅ ¡Registro exitoso! Redirigiendo al login...', 'success');
@@ -76,10 +74,10 @@ class RegisterModule {
                     window.location.href = 'login.html';
                 }, 2000);
             } else {
-                this.showMessage('❌ El email ya está registrado', 'danger');
+                this.showMessage('❌ El email ya está registrado. Usa otro email o inicia sesión.', 'danger');
             }
         } catch (error) {
-            console.error('Error detallado:', error);
+            console.error('Error en registro:', error);
             this.showMessage('Error de conexión. Intenta de nuevo.', 'danger');
         } finally {
             this.setLoading(false);
@@ -87,37 +85,51 @@ class RegisterModule {
     }
     
     async registerUser(fullName, email, password) {
-        // Simular delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Simular delay de red
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Verificar si el email ya existe en localStorage
-        const users = JSON.parse(localStorage.getItem('guardpal_users') || '[]');
+        // Obtener usuarios existentes
+        let users = JSON.parse(localStorage.getItem('guardpal_users') || '[]');
         
+        // Verificar si el email ya existe
         const existingUser = users.find(u => u.email === email);
         if (existingUser) {
+            console.log('❌ Email ya registrado:', email);
             return false;
         }
         
-        // Guardar nuevo usuario
+        // Crear nuevo usuario
         const newUser = {
             id: users.length + 1,
             name: fullName,
             email: email,
-            password: password, // En producción NUNCA guardar así
+            password: password, // ⚠️ En producción NUNCA guardar contraseñas así
             createdAt: new Date().toISOString()
         };
         
         users.push(newUser);
         localStorage.setItem('guardpal_users', JSON.stringify(users));
         
-        console.log('Usuario guardado:', newUser); // 👈 DEBUG
+        // También crear transacciones iniciales para el nuevo usuario
+        const initialTransactions = [
+            { id: Date.now(), type: 'deposit', amount: 1000, currency: 'USD', date: new Date().toISOString().split('T')[0], status: 'completed', description: 'Depósito de bienvenida' }
+        ];
+        localStorage.setItem(`guardpal_transactions_${newUser.id}`, JSON.stringify(initialTransactions));
+        
+        console.log('✅ Usuario registrado:', newUser);
+        console.log('📊 Total usuarios:', users.length);
         
         return true;
     }
     
+    isValidEmail(email) {
+        const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+        return re.test(email);
+    }
+    
     validateEmail() {
         const email = this.emailInput?.value.trim();
-        if (email && !Helpers.isValidEmail(email)) {
+        if (email && !this.isValidEmail(email)) {
             this.showFieldError(this.emailInput, 'Ingresa un email válido');
             return false;
         }
@@ -194,13 +206,13 @@ class RegisterModule {
             `;
             
             setTimeout(() => {
-                if (this.messageDiv) this.messageDiv.innerHTML = '';
+                if (this.messageDiv.innerHTML) this.messageDiv.innerHTML = '';
             }, 5000);
         }
     }
 }
 
-// Inicializar cuando el DOM esté listo
+// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
     new RegisterModule();
 });
