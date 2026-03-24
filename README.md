@@ -651,6 +651,43 @@ Comportamiento esperado vs actual
 Capturas de pantalla
 
 Errores de consola (F12)
+## ✨ Funcionalidades Implementadas
+
+### 🔐 Autenticación
+- Login con usuarios registrados
+- Registro de nuevos usuarios
+- Rate limiting (5 intentos fallidos)
+- Sesiones con expiración (24h)
+
+### 💰 Billetera Digital
+- Depósitos y retiros
+- **Transferencias entre usuarios** ✅ NUEVO
+- Saldo en tiempo real
+- Historial de transacciones
+
+### 📜 Historial
+- Filtros por fecha y tipo
+- Paginación
+- Exportación a CSV ✅ NUEVO
+
+### 👤 Perfil de Usuario ✅ NUEVO
+- Edición de datos personales
+- Cambio de contraseña
+- Avatar personalizable (carga de imágenes)
+- Modo oscuro con alto contraste
+- Preferencias persistentes
+
+### 📊 Dashboard
+- Tabla de activos ordenable
+- Estadísticas en tiempo real
+- Exportación a JSON
+
+## 🚀 Últimas Mejoras (v2.0)
+- ✅ Transferencias entre usuarios
+- ✅ Perfil con avatar y modo oscuro
+- ✅ Exportación de historial a CSV
+- ✅ Persistencia de preferencias
+- ✅ Modo oscuro con alto contraste
 
 📄 Licencia
 Este proyecto está bajo la Licencia MIT. Consulta el archivo LICENSE para más detalles.
