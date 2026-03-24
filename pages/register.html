@@ -6,8 +6,6 @@
     <title>GuardPal - Crear cuenta</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/components.css">
     
     <style>
         body {
@@ -17,10 +15,19 @@
             align-items: center;
         }
         .register-card {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .btn-register {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            transition: transform 0.2s;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
     </style>
 </head>
@@ -40,33 +47,33 @@
                         <form id="registerForm">
                             <div class="mb-3">
                                 <label for="fullName" class="form-label">Nombre completo</label>
-                                <input type="text" class="form-control" id="fullName" name="fullName" required>
+                                <input type="text" class="form-control" id="fullName" required>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="email" class="form-label">Correo electrónico</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" class="form-control" id="email" required>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                                <small class="text-muted">Mínimo 6 caracteres, incluyendo letras y números</small>
+                                <input type="password" class="form-control" id="password" required>
+                                <small class="text-muted">Mínimo 6 caracteres</small>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="confirmPassword" class="form-label">Confirmar contraseña</label>
-                                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                                <input type="password" class="form-control" id="confirmPassword" required>
                             </div>
                             
                             <div class="mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" id="terms" required>
                                 <label class="form-check-label" for="terms">
-                                    Acepto los <a href="#" target="_blank">términos y condiciones</a>
+                                    Acepto los términos y condiciones
                                 </label>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary w-100 py-2" id="submitBtn">
+                            <button type="submit" class="btn btn-register w-100 py-2" id="submitBtn">
                                 Registrarse
                             </button>
                         </form>
@@ -83,15 +90,96 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/core/config.js"></script>
-    <script src="../js/utils/helpers.js"></script>
-    <script src="../js/utils/validators.js"></script>
-    <script src="../js/core/auth.js"></script>
-    <script src="../js/modules/register.js"></script>
+    
     <script>
-        // Si ya está autenticado, redirigir al dashboard
-        if (auth.isAuthenticated()) {
-            window.location.href = 'dashboard.html';
+        // REGISTRO FUNCIONAL
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('fullName').value.trim();
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const terms = document.getElementById('terms').checked;
+            const messageDiv = document.getElementById('registerMessage');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            function showMessage(msg, isError) {
+                const className = isError ? 'alert-danger' : 'alert-success';
+                messageDiv.innerHTML = `<div class="alert ${className}">${msg}</div>`;
+                setTimeout(() => messageDiv.innerHTML = '', 3000);
+            }
+            
+            // Validaciones
+            if (!fullName || !email || !password || !confirmPassword) {
+                showMessage('❌ Completa todos los campos', true);
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showMessage('❌ Las contraseñas no coinciden', true);
+                return;
+            }
+            
+            if (password.length < 6) {
+                showMessage('❌ La contraseña debe tener al menos 6 caracteres', true);
+                return;
+            }
+            
+            if (!terms) {
+                showMessage('❌ Acepta los términos y condiciones', true);
+                return;
+            }
+            
+            // Obtener usuarios existentes
+            let users = JSON.parse(localStorage.getItem('guardpal_users') || '[]');
+            
+            // Verificar si ya existe
+            if (users.find(u => u.email === email)) {
+                showMessage('❌ Este email ya está registrado', true);
+                return;
+            }
+            
+            // Crear nuevo usuario
+            const newUser = {
+                id: Date.now(),
+                name: fullName,
+                email: email,
+                password: password,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('guardpal_users', JSON.stringify(users));
+            
+            // Crear transacciones iniciales para el usuario
+            const initialTransactions = [{
+                id: Date.now(),
+                type: 'deposit',
+                amount: 1000,
+                currency: 'USD',
+                date: new Date().toISOString().split('T')[0],
+                status: 'completed',
+                description: 'Depósito de bienvenida'
+            }];
+            localStorage.setItem(`guardpal_transactions_${newUser.id}`, JSON.stringify(initialTransactions));
+            
+            showMessage('✅ ¡Registro exitoso! Redirigiendo al login...', false);
+            
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        });
+        
+        // Verificar si ya hay sesión
+        const sesion = sessionStorage.getItem('guardpal_auth');
+        if (sesion) {
+            try {
+                const data = JSON.parse(sesion);
+                if (Date.now() < data.expiresAt) {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch(e) {}
         }
     </script>
 </body>
